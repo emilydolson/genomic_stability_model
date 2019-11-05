@@ -6,8 +6,8 @@
 
 
 // TODO:
-// - Implement non-spatial
 // - Implement ability to choose mutation distribution
+// - Distribution of initial fitnesses
 
 EMP_BUILD_CONFIG( InstabilityConfig,
   GROUP(MAIN, "Global settings"),
@@ -76,13 +76,21 @@ class InstabilityWorld : public emp::World<Cell> {
     // for (int cell_id = 0; cell_id < WORLD_X * WORLD_Y; cell_id++) {
     //   InjectAt(Cell(CELL_STATE::HEALTHY), cell_id);
     // }
-    pop.resize(WORLD_X*WORLD_Y);
-    size_t initial_spot = random_ptr->GetUInt(WORLD_Y*WORLD_X);
-    InjectAt(Cell(), initial_spot);
+    if (SPATIAL) {
+        pop.resize(WORLD_X*WORLD_Y);
+        size_t initial_spot = random_ptr->GetUInt(WORLD_Y*WORLD_X);
+        InjectAt(Cell(), initial_spot);
 
-    for (size_t cell_id = 1; cell_id < (size_t)INIT_POP_SIZE; cell_id++) {
-      size_t spot = random_ptr->GetUInt(WORLD_Y*WORLD_X);
-      AddOrgAt(emp::NewPtr<Cell>(), spot, initial_spot);
+        for (size_t cell_id = 1; cell_id < (size_t)INIT_POP_SIZE; cell_id++) {
+            size_t spot = random_ptr->GetUInt(WORLD_Y*WORLD_X);
+            AddOrgAt(emp::NewPtr<Cell>(), spot, initial_spot);
+        }
+    } else {
+        Inject(Cell());
+        for (size_t cell_id = 1; cell_id < (size_t)INIT_POP_SIZE; cell_id++) {
+            DoBirth(Cell(), 0, 1);
+        }
+
     }
   }
 
@@ -116,7 +124,9 @@ class InstabilityWorld : public emp::World<Cell> {
 
     // emp::DataFile & phylodiversity_file = SetupFile("phylodiversity.csv");
 
-    SetPopStruct_Grid(WORLD_X, WORLD_Y, true);
+    if (SPATIAL) {
+        SetPopStruct_Grid(WORLD_X, WORLD_Y, true);
+    }
     InitPop();
 
     // SetSynchronousSystematics(true);
@@ -184,7 +194,10 @@ class InstabilityWorld : public emp::World<Cell> {
       }
 
       // Check for space for division
-      int potential_offspring_cell = CanDivide(cell_id);
+      int potential_offspring_cell = pop.size();
+      if (SPATIAL) {
+          potential_offspring_cell = CanDivide(cell_id);
+      } 
 
       // If space and cell gets sufficiently lucky, divide
       double divide_prob = pop[cell_id]->fitness/MAX_FITNESS;
@@ -220,8 +233,9 @@ class InstabilityWorld : public emp::World<Cell> {
       for (int u = 0; u <= TIME_STEPS; u++) {
           RunStep();
           // Check end conditions
-          if (pop.size() == 0 || pop.size() > (size_t) MAX_CELLS) {
+          if (GetNumOrgs() == 0 || GetNumOrgs() > (size_t) MAX_CELLS) {
             // We either killed everything, or population got too large
+            std::cout << "Ended with population size " << GetNumOrgs() << std::endl;
             break;
           }
       }
