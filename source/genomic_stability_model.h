@@ -20,7 +20,7 @@ EMP_BUILD_CONFIG( InstabilityConfig,
   VALUE(SPATIAL, bool, true, "Is the model spatial?"),
   VALUE(CELL_DEATH_PROB, double, .01, "Probability of stochastic cell death"),
   VALUE(MAX_CELLS, int, 20000, "Maximum number of cells to allow before we end model"),
-  VALUE(MAX_FITNESS, double, 10.0, "Maximum fitness (for purposes of calculating reproduction probability)"),  
+  VALUE(MAX_FITNESS, double, 50.0, "Maximum fitness (for purposes of calculating reproduction probability)"),  
 );
 
 struct Cell {

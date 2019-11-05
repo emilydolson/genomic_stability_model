@@ -36,7 +36,14 @@ class InstabilityWebInterface : public UI::Animate, public InstabilityWorld{
   color_fun_t cell_color_fun;
   UI::Selector cell_color_control;
   color_fun_t fitness_color_fun = [this](int cell_id) {
-                                        double hue = pop[cell_id]->fitness * 280.0;
+                                        double fitness = pop[cell_id]->fitness/MAX_FITNESS;
+                                        if (fitness > 1) {
+                                          fitness = 1;
+                                        } else if (fitness < 0) {
+                                          fitness = 0;
+                                        }
+                                        double hue =  fitness * 280.0;
+                                        // std::cout << pop[cell_id]->fitness << " " << hue << std::endl;
                                         return emp::ColorHSL(hue,50,50);
                                      };
 
