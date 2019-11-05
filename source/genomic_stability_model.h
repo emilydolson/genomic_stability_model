@@ -107,7 +107,8 @@ class InstabilityWorld : public emp::World<Cell> {
     // sys.New([](const Cell & c){return c.clade;});
     // AddSystematics(sys);
 
-    // SetupFitnessFile().SetTimingRepeat(config.DATA_RESOLUTION());
+    SetFitFun([this](Cell & c){double fit = c.fitness/MAX_FITNESS; if (fit > 1){return 1.0;} return fit;});
+    SetupFitnessFile().SetTimingRepeat(config.DATA_RESOLUTION());
     // SetupSystematicsFile().SetTimingRepeat(config.DATA_RESOLUTION());
     // SetupPopulationFile().SetTimingRepeat(config.DATA_RESOLUTION());
 

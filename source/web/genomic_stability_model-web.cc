@@ -113,13 +113,12 @@ class InstabilityWebInterface : public UI::Animate, public InstabilityWorld{
     controls << config_ui.GetDiv();
 
     stats_area << "<br>Time step: " << emp::web::Live( [this](){ return GetUpdate(); } );
+    stats_area << "<br>Mean fitness: " << emp::web::Live( [this](){ return GetFitnessDataNode()->GetMean(); } );
+    stats_area << "<br>Variance of fitness: " << emp::web::Live( [this](){ return GetFitnessDataNode()->GetVariance(); } );
+    stats_area << "<br>Max fitness: " << emp::web::Live( [this](){ return GetFitnessDataNode()->GetMax(); } );
+    stats_area << "<br>Min fitness: " << emp::web::Live( [this](){ return GetFitnessDataNode()->GetMin(); } );
     // stats_area << "<br>Extant taxa: " << emp::web::Live( [this](){ return systematics[0].DynamicCast<emp::Systematics<Cell, int>>()->GetNumActive(); } );
     // stats_area << "<br>Shannon diversity: " << emp::web::Live( [this](){ return systematics[0].DynamicCast<emp::Systematics<Cell, int>>()->CalcDiversity(); } );
-    // stats_area << "<br>Sackin Index: " << emp::web::Live( [this](){ return systematics[0].DynamicCast<emp::Systematics<Cell, int>>()->SackinIndex(); } );
-    // stats_area << "<br>Colless-Like Index: " << emp::web::Live( [this](){ return systematics[0].DynamicCast<emp::Systematics<Cell, int>>()->CollessLikeIndex(); } );
-    // stats_area << "<br>Phylogenetic diversity: " << emp::web::Live( [this](){ return systematics[0].DynamicCast<emp::Systematics<Cell, int>>()->GetPhylogeneticDiversity(); } );
-    // stats_area << "<br>Mean pairwise distance: " << emp::web::Live( [this](){ return systematics[0].DynamicCast<emp::Systematics<Cell, int>>()->GetMeanPairwiseDistance(); } );
-    // stats_area << "<br>Variance pairwise distance: " << emp::web::Live( [this](){ return systematics[0].DynamicCast<emp::Systematics<Cell, int>>()->GetVariancePairwiseDistance(); } );
   }
 
   void DoFrame() {
