@@ -26,7 +26,8 @@ EMP_BUILD_CONFIG( InstabilityConfig,
 struct Cell {
     double fitness = .1;
 
-    Cell() {;}
+    Cell(double in_fitness = .1) : 
+        fitness(in_fitness) {;}
 
     bool operator< (const Cell & other) const {
       return fitness < other.fitness;
