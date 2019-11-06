@@ -40,13 +40,22 @@ class InstabilityWebInterface : public UI::Animate, public InstabilityWorld{
                                         if (fitness > 1) {
                                           fitness = 1;
                                         } else if (fitness < 0) {
-                                          fitness = 0;
+                                          return emp::ColorHSL(0,100,100);
                                         }
                                         double hue =  fitness * 280.0;
                                         // std::cout << pop[cell_id]->fitness << " " << hue << std::endl;
                                         return emp::ColorHSL(hue,50,50);
                                      };
 
+  color_fun_t stability_color_fun = [this](int cell_id) {
+                                        double stability = pop[cell_id]->stability/10;
+                                        if (stability > 1) {
+                                          stability = 1;
+                                        } 
+                                        double hue = stability * 280.0;
+                                        // std::cout << pop[cell_id]->fitness << " " << hue << std::endl;
+                                        return emp::ColorHSL(hue,50,50);
+                                     };
 
   should_draw_fun_t should_draw_cell_fun;
   should_draw_fun_t draw_if_occupied = [this](int cell_id){return IsOccupied(cell_id);};
@@ -82,6 +91,13 @@ class InstabilityWebInterface : public UI::Animate, public InstabilityWorld{
                                      cell_color_fun = fitness_color_fun;
                                      should_draw_cell_fun = draw_if_occupied;
                                      RedrawCells();
+                                 }, 0);
+
+    cell_color_control.SetOption("Stability", 
+                                 [this](){
+                                     cell_color_fun = stability_color_fun;
+                                     should_draw_cell_fun = draw_if_occupied;
+                                     RedrawCells();
                                  }, 1);
 
 
@@ -106,8 +122,8 @@ class InstabilityWebInterface : public UI::Animate, public InstabilityWorld{
     config_ui.SetOnChangeFun([this](const std::string & val){ std::cout << "New val: " << val<<std::endl;;InitConfigs(config);});
     config_ui.ExcludeConfig("SEED");
     config_ui.ExcludeConfig("TIME_STEPS");
-    // config_ui.ExcludeConfig("WORLD_X");
-    // config_ui.ExcludeConfig("WORLD_Y");
+    config_ui.ExcludeConfig("TREATMENT_START");
+    config_ui.ExcludeConfig("TREATMENT_MUT_PROB");
     config_ui.ExcludeConfig("DATA_RESOLUTION");
     config_ui.Setup();
     controls << config_ui.GetDiv();

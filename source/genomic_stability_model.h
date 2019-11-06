@@ -3,11 +3,11 @@
 
 #include "config/ArgManager.h"
 #include "Evolve/World.h"
+#include "tools/random_utils.h"
 
 #include <random>
 
 // TODO:
-// - Implement ability to choose mutation distribution
 // - Distribution of initial fitnesses
 
 EMP_BUILD_CONFIG( InstabilityConfig,
@@ -22,17 +22,25 @@ EMP_BUILD_CONFIG( InstabilityConfig,
   VALUE(CELL_DEATH_PROB, double, .01, "Probability of stochastic cell death"),
   VALUE(MAX_CELLS, int, 20000, "Maximum number of cells to allow before we end model"),
   VALUE(MAX_FITNESS, double, 50.0, "Maximum fitness (for purposes of calculating reproduction probability)"),  
+  VALUE(FITNESS_MULT, double, .5, "Value to multiply fitness by to get division rate (controls strength of selection by altering relative fitness)"),   
+  VALUE(INITIAL_FITNESS, double, 0.1, "Initial fitness of first cell"),   
 
   GROUP(MUTATION, "Mutation settings"),
   VALUE(GAMMA_K, double, 1, "K value for gamma distribution determining fitness effects"), 
   VALUE(GAMMA_MEAN, double, 1, "Mean for gamma distribution determining fitness effects"),   
   VALUE(GAMMA_SHIFT, double, -1, "Amount to shift gamma distribution by (must be negative to allow deleterious mutations)"),   
   VALUE(GAMMA_WIDTH, double, 1, "Value to multiply gamma distribution by to adjust width"),   
-  VALUE(MUT_PROB, double, .5, "Probability of having any mutation"),   
+  VALUE(MUT_PROB, double, .5, "Probability of having a fitness mutation"),   
+  VALUE(STABILITY_MUT_PROB, double, .1, "Probability of having a mutation to stability"),   
+
+  GROUP(TREATMENT, "Treatment settings"),
+  VALUE(TREATMENT_START, int, 100000, "Number of cells at which to start treatment."), 
+  VALUE(TREATMENT_MUT_PROB, double, 1, "Mutation probability for treatment."), 
 );
 
 struct Cell {
     double fitness = .1;
+    double stability = 1;
 
     Cell(double in_fitness = .1) : 
         fitness(in_fitness) {;}
@@ -53,12 +61,19 @@ class InstabilityWorld : public emp::World<Cell> {
   bool SPATIAL;
   double CELL_DEATH_PROB;
   int MAX_CELLS;
-  int MAX_FITNESS;
+  double MAX_FITNESS;
+  double FITNESS_MULT;
   double GAMMA_K;
   double GAMMA_MEAN;
   double GAMMA_SHIFT;
   double GAMMA_WIDTH;
   double MUT_PROB;
+  double STABILITY_MUT_PROB;
+  double INITIAL_FITNESS;
+  int TREATMENT_START;
+  double TREATMENT_MUT_PROB;
+
+  int most_recent_birth = 0;
 
   // TODO: Get rid of this
   std::default_random_engine generator;
@@ -79,11 +94,16 @@ class InstabilityWorld : public emp::World<Cell> {
     SPATIAL = config.SPATIAL();
     MAX_CELLS = config.MAX_CELLS();
     MAX_FITNESS = config.MAX_FITNESS(); 
+    FITNESS_MULT = config.FITNESS_MULT(); 
     GAMMA_K = config.GAMMA_K();   
     GAMMA_MEAN = config.GAMMA_MEAN();   
     GAMMA_SHIFT = config.GAMMA_SHIFT();   
     GAMMA_WIDTH = config.GAMMA_WIDTH();   
     MUT_PROB = config.MUT_PROB();   
+    STABILITY_MUT_PROB = config.STABILITY_MUT_PROB();   
+    INITIAL_FITNESS = config.INITIAL_FITNESS();   
+    TREATMENT_START = config.TREATMENT_START();   
+    TREATMENT_MUT_PROB = config.TREATMENT_MUT_PROB();   
   }
 
   size_t GetWorldX() {
@@ -101,17 +121,30 @@ class InstabilityWorld : public emp::World<Cell> {
     // }
     if (SPATIAL) {
         pop.resize(WORLD_X*WORLD_Y);
-        size_t initial_spot = random_ptr->GetUInt(WORLD_Y*WORLD_X);
-        InjectAt(Cell(), initial_spot);
+        size_t initial_spot = (WORLD_Y/2)*WORLD_X + WORLD_X/2;
+        // std::cout << initial_spot << std::endl;
+        InjectAt(Cell(INITIAL_FITNESS), initial_spot);
 
-        for (size_t cell_id = 1; cell_id < (size_t)INIT_POP_SIZE; cell_id++) {
-            size_t spot = random_ptr->GetUInt(WORLD_Y*WORLD_X);
-            AddOrgAt(emp::NewPtr<Cell>(), spot, initial_spot);
+        emp::vector<size_t> spots;
+        spots.push_back(initial_spot);
+
+        for (size_t cell_id = 1; cell_id < (size_t)INIT_POP_SIZE; cell_id++) {    
+            int spot = CanDivide(spots[0]);
+            while (spot == -1) {
+                spots.erase(spots.begin());
+                emp::Shuffle(*random_ptr, spots, 1);
+                spot = CanDivide(spots[0]);
+            }
+            // std::cout << spot << std::endl;
+            AddOrgAt(emp::NewPtr<Cell>(INITIAL_FITNESS), spot, initial_spot);
+            spots.push_back(spot);
+            emp::Shuffle(*random_ptr, spots, 1);
+            initial_spot = spot;
         }
     } else {
-        Inject(Cell());
+        Inject(Cell(INITIAL_FITNESS));
         for (size_t cell_id = 1; cell_id < (size_t)INIT_POP_SIZE; cell_id++) {
-            DoBirth(Cell(), 0, 1);
+            DoBirth(Cell(INITIAL_FITNESS), 0, 1);
         }
 
     }
@@ -135,7 +168,7 @@ class InstabilityWorld : public emp::World<Cell> {
     SetFitFun([this](Cell & c){double fit = c.fitness/MAX_FITNESS; if (fit > 1){return 1.0;} return fit;});
     SetupFitnessFile().SetTimingRepeat(config.DATA_RESOLUTION());
     // SetupSystematicsFile().SetTimingRepeat(config.DATA_RESOLUTION());
-    // SetupPopulationFile().SetTimingRepeat(config.DATA_RESOLUTION());
+    SetupPopulationFile().SetTimingRepeat(config.DATA_RESOLUTION());
 
     // emp::DataFile & phylodiversity_file = SetupFile("phylodiversity.csv");
     // sys->AddEvolutionaryDistinctivenessDataNode();
@@ -190,9 +223,25 @@ class InstabilityWorld : public emp::World<Cell> {
   }
 
   int Mutate(emp::Ptr<Cell> c){
+
+    most_recent_birth = update;
+
     if (random_ptr->P(MUT_PROB)) {
-         c->fitness += ((*gamma_distribution)(generator) + GAMMA_SHIFT) * GAMMA_WIDTH;
+         c->fitness += ((*gamma_distribution)(generator) + GAMMA_SHIFT) * GAMMA_WIDTH * c->stability;
+         if (c->fitness > MAX_FITNESS) {
+             c->fitness = MAX_FITNESS;
+         }
          return 1;   
+    }
+
+    if (random_ptr->P(STABILITY_MUT_PROB)) {
+        c->stability += .1;
+        return 1;
+    }
+
+    if (random_ptr->P(STABILITY_MUT_PROB)) {
+        c->stability -= .1;
+        return 1;
     }
 
     return 0;
@@ -208,6 +257,9 @@ class InstabilityWorld : public emp::World<Cell> {
 
   void RunStep() {
     std::cout << update << std::endl;
+    if (GetNumOrgs() >= TREATMENT_START) {
+        MUT_PROB = TREATMENT_MUT_PROB;
+    }
 
     for (int cell_id = 0; cell_id < WORLD_X * WORLD_Y; cell_id++) {
       if (!IsOccupied(cell_id)) {
@@ -230,9 +282,11 @@ class InstabilityWorld : public emp::World<Cell> {
       } 
 
       // If space and cell gets sufficiently lucky, divide
-      double divide_prob = pop[cell_id]->fitness/MAX_FITNESS;
+      double divide_prob = (FITNESS_MULT * pop[cell_id]->fitness/(MAX_FITNESS));
       if (divide_prob > 1){
           divide_prob = 1;
+      } else if (divide_prob < 0) {
+          divide_prob = 0;
       }
       if (potential_offspring_cell != -1 && random_ptr->P(divide_prob)) {
         // Cell divides
@@ -263,9 +317,11 @@ class InstabilityWorld : public emp::World<Cell> {
       for (int u = 0; u <= TIME_STEPS; u++) {
           RunStep();
           // Check end conditions
-          if (GetNumOrgs() == 0 || GetNumOrgs() > (size_t) MAX_CELLS) {
-            // We either killed everything, or population got too large
-            std::cout << "Ended with population size " << GetNumOrgs() << std::endl;
+          if (GetNumOrgs() == 0 || update - most_recent_birth > 1000) {
+            std::cout << "Success!" << std::endl;
+            break;
+          } else if (GetNumOrgs() >= (size_t) WORLD_X*WORLD_Y) {
+            std::cout << "Failure!" << std::endl;
             break;
           }
       }
