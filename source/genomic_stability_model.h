@@ -4,6 +4,7 @@
 #include "config/ArgManager.h"
 #include "Evolve/World.h"
 
+#include <random>
 
 // TODO:
 // - Implement ability to choose mutation distribution
@@ -21,6 +22,11 @@ EMP_BUILD_CONFIG( InstabilityConfig,
   VALUE(CELL_DEATH_PROB, double, .01, "Probability of stochastic cell death"),
   VALUE(MAX_CELLS, int, 20000, "Maximum number of cells to allow before we end model"),
   VALUE(MAX_FITNESS, double, 50.0, "Maximum fitness (for purposes of calculating reproduction probability)"),  
+  VALUE(GAMMA_K, double, 1, "K value for gamma distribution determining fitness effects"), 
+  VALUE(GAMMA_MEAN, double, 1, "Mean for gamma distribution determining fitness effects"),   
+  VALUE(GAMMA_SHIFT, double, -1, "Amount to shift gamma distribution by (must be negative to allow deleterious mutations)"),   
+  VALUE(GAMMA_WIDTH, double, 1, "Value to multiply gamma distribution by to adjust width"),   
+  VALUE(MUT_PROB, double, .5, "Probability of having any mutation"),   
 );
 
 struct Cell {
@@ -46,6 +52,15 @@ class InstabilityWorld : public emp::World<Cell> {
   double CELL_DEATH_PROB;
   int MAX_CELLS;
   int MAX_FITNESS;
+  double GAMMA_K;
+  double GAMMA_MEAN;
+  double GAMMA_SHIFT;
+  double GAMMA_WIDTH;
+  double MUT_PROB;
+
+  // TODO: Get rid of this
+  std::default_random_engine generator;
+  emp::Ptr<std::gamma_distribution<double>> gamma_distribution;
 
   public:
   InstabilityWorld(emp::Random & r) : emp::World<Cell>(r) {;}
@@ -61,7 +76,12 @@ class InstabilityWorld : public emp::World<Cell> {
     DATA_RESOLUTION = config.DATA_RESOLUTION();
     SPATIAL = config.SPATIAL();
     MAX_CELLS = config.MAX_CELLS();
-    MAX_FITNESS = config.MAX_FITNESS();    
+    MAX_FITNESS = config.MAX_FITNESS(); 
+    GAMMA_K = config.GAMMA_K();   
+    GAMMA_MEAN = config.GAMMA_MEAN();   
+    GAMMA_SHIFT = config.GAMMA_SHIFT();   
+    GAMMA_WIDTH = config.GAMMA_WIDTH();   
+    MUT_PROB = config.MUT_PROB();   
   }
 
   size_t GetWorldX() {
@@ -102,6 +122,8 @@ class InstabilityWorld : public emp::World<Cell> {
 
   void Setup(InstabilityConfig & config, bool web = false) {
     InitConfigs(config);
+
+    gamma_distribution.New(GAMMA_K, GAMMA_MEAN);
 
     // emp::Ptr<emp::Systematics<Cell, int> > sys;
     // sys.New([](const Cell & c){return c.clade;});
@@ -165,7 +187,10 @@ class InstabilityWorld : public emp::World<Cell> {
   }
 
   int Mutate(emp::Ptr<Cell> c){
-    c->fitness += random_ptr->GetRandNormal(0, 1);
+    if (random_ptr->P(MUT_PROB)) {
+         c->fitness += ((*gamma_distribution)(generator) + GAMMA_SHIFT) * GAMMA_WIDTH;
+         return 1;   
+    }
 
     return 0;
   }
