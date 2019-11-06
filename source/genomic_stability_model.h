@@ -22,6 +22,8 @@ EMP_BUILD_CONFIG( InstabilityConfig,
   VALUE(CELL_DEATH_PROB, double, .01, "Probability of stochastic cell death"),
   VALUE(MAX_CELLS, int, 20000, "Maximum number of cells to allow before we end model"),
   VALUE(MAX_FITNESS, double, 50.0, "Maximum fitness (for purposes of calculating reproduction probability)"),  
+
+  GROUP(MUTATION, "Mutation settings"),
   VALUE(GAMMA_K, double, 1, "K value for gamma distribution determining fitness effects"), 
   VALUE(GAMMA_MEAN, double, 1, "Mean for gamma distribution determining fitness effects"),   
   VALUE(GAMMA_SHIFT, double, -1, "Amount to shift gamma distribution by (must be negative to allow deleterious mutations)"),   
@@ -117,7 +119,8 @@ class InstabilityWorld : public emp::World<Cell> {
 
   void Reset(InstabilityConfig & config, bool web = false) {
     Clear();
-    Setup(config, web);    
+    update = 0;
+    Setup(config, web);
   }
 
   void Setup(InstabilityConfig & config, bool web = false) {
