@@ -12,7 +12,8 @@ for k in ks:
 ########## SBATCH Lines for Resource Request ##########                         
 
 #SBATCH --time=3:59:00
-#SBATCH --job-name m{m}_k{k}_mult{s}                                               
+#SBATCH --job-name m{m}_k{k}_mult{s} 
+#SBATCH --mem-per-cpu=500M                                             
 ####SBATCH --array=1-10                                                            
 ########## Command Lines to Run ##########                                      
 
