@@ -49,7 +49,7 @@ def main():
         # dominant_df = pd.read_csv(dirname+"/dominant.csv", index_col="update")
         # lin_df = pd.read_csv(dirname+"/lineage_mutations.csv", index_col="update")
 
-        df = pd.concat([fitness_df, systematics_df, population_df], axis=1)
+        df = pd.concat([fitness_df, population_df], axis=1)
         for k in local_data:
             df[k] = local_data[k]
 
