@@ -40,6 +40,8 @@ def main():
                 line = line.split()
                 local_data[line[1]] = line[2]
 
+            last_line = run_log_file.readlines()[-1]
+
 		# Create function
 
         fitness_df = pd.read_csv(dirname+"/fitness.csv", index_col="update")
@@ -55,6 +57,7 @@ def main():
             df[k] = local_data[k]
 
         df["rep"] = rep
+        df["status"] = last_line
         rep += 1
 
         frames.append(df)
