@@ -13,9 +13,13 @@ library(readr)
 library(ggplot2)
 library(dplyr)
 
-all_data <- read_csv("../scripts/all_data.csv.csv")
+all_data <- read_csv("../scripts/all_data.csv")
 all_data$MUT_PROB <- as.factor(all_data$MUT_PROB)
+all_data$FITNESS_MULT <- as.factor(all_data$FITNESS_MULT)
 
 ggplot(data=all_data) + stat_summary(aes(x=update, y=mean_fitness, color=MUT_PROB, fill=MUT_PROB), geom = "smooth", fun.data ="median_hilow") + facet_wrap(~GAMMA_K) + theme_classic()
+
+ggplot(data=all_data) + geom_line(aes(x=update, y=mean_fitness, color=MUT_PROB, fill=MUT_PROB, group=rep, linetype=FITNESS_MULT)) + facet_wrap(~GAMMA_K) + theme_classic() + scale_x_log10()
+
 
 ```
