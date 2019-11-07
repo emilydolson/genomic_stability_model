@@ -72,6 +72,8 @@ class InstabilityWebInterface : public UI::Animate, public InstabilityWorld{
 
   void SetupInterface() {
     GetRandom().ResetSeed(config.SEED());
+    config.WORLD_X(100);
+    config.WORLD_Y(100);
     Setup(config, true);
 
     cell_area.SetWidth(WORLD_X * display_cell_size);
