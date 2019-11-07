@@ -16,6 +16,7 @@ for k in ks:
 ####SBATCH --array=1-10                                                            
 ########## Command Lines to Run ##########                                      
 
+mkdir /mnt/scratch/dolsonem/genomic_stability/data/MUTPROB_{m}_K_{k}_FITNESSMULT_{s}
 cd /mnt/scratch/dolsonem/genomic_stability/data/MUTPROB_{m}_K_{k}_FITNESSMULT_{s}
 
 #mkdir $SLURM_ARRAY_TASK_ID
