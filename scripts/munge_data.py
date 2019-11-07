@@ -18,6 +18,7 @@ def main():
     outfilename = sys.argv[2]
     frames = []
     trait_frames = []
+    rep = 0
 
     # print(glob_pattern, glob.glob(glob_pattern))
     print(glob.glob(glob_pattern))
@@ -53,10 +54,13 @@ def main():
         for k in local_data:
             df[k] = local_data[k]
 
+        df["rep"] = rep
+        rep += 1
+
         frames.append(df)
 
     all_data = pd.concat(frames)
-    all_data.to_csv(outfilename+".csv",index=False)
+    all_data.to_csv(outfilename+".csv",index=True)
 
 
 if __name__ == "__main__":
