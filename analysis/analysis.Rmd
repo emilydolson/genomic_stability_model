@@ -1,0 +1,21 @@
+---
+title: "Genomic Stability"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(readr)
+library(ggplot2)
+library(dplyr)
+
+all_data <- read_csv("../scripts/all_data.csv.csv")
+all_data$MUT_PROB <- as.factor(all_data$MUT_PROB)
+
+ggplot(data=all_data) + stat_summary(aes(x=update, y=mean_fitness, color=MUT_PROB, fill=MUT_PROB), geom = "smooth", fun.data ="median_hilow") + facet_wrap(~GAMMA_K) + theme_classic()
+
+```
