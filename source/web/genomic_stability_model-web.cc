@@ -122,8 +122,6 @@ class InstabilityWebInterface : public UI::Animate, public InstabilityWorld{
     config_ui.SetOnChangeFun([this](const std::string & val){ std::cout << "New val: " << val<<std::endl;;InitConfigs(config);});
     config_ui.ExcludeConfig("SEED");
     config_ui.ExcludeConfig("TIME_STEPS");
-    config_ui.ExcludeConfig("TREATMENT_START");
-    config_ui.ExcludeConfig("TREATMENT_MUT_PROB");
     config_ui.ExcludeConfig("DATA_RESOLUTION");
     config_ui.Setup();
     controls << config_ui.GetDiv();

@@ -14,13 +14,13 @@ EMP_BUILD_CONFIG( InstabilityConfig,
   GROUP(MAIN, "Global settings"),
   VALUE(SEED, int, -1, "Random number generator seed"),
   VALUE(TIME_STEPS, int, 1000, "Number of time steps to run for"),
-  VALUE(WORLD_X, int, 100, "Length of plate in cell widths"),
-  VALUE(WORLD_Y, int, 100, "Width of plate in cell widths"),
+  VALUE(WORLD_X, int, 10000, "Length of plate in cell widths"),
+  VALUE(WORLD_Y, int, 10000, "Width of plate in cell widths"),
   VALUE(INIT_POP_SIZE, int, 1, "Number of cells to seed population with"),
   VALUE(DATA_RESOLUTION, int, 10, "How many updates between printing data?"),
   VALUE(SPATIAL, bool, true, "Is the model spatial?"),
   VALUE(CELL_DEATH_PROB, double, .01, "Probability of stochastic cell death"),
-  VALUE(MAX_CELLS, int, 20000, "Maximum number of cells to allow before we end model"),
+  VALUE(MAX_CELLS, int, 1000000, "Maximum number of cells to allow before we end model"),
   VALUE(MAX_FITNESS, double, 50.0, "Maximum fitness (for purposes of calculating reproduction probability)"),  
   VALUE(FITNESS_MULT, double, .1, "Value to multiply fitness by to get division rate (controls strength of selection by altering relative fitness)"),   
   VALUE(INITIAL_FITNESS, double, 1, "Initial fitness of first cell"),   
@@ -33,9 +33,6 @@ EMP_BUILD_CONFIG( InstabilityConfig,
   VALUE(MUT_PROB, double, .1, "Probability of having a fitness mutation"),   
   VALUE(STABILITY_MUT_PROB, double, .1, "Probability of having a mutation to stability"),   
 
-  GROUP(TREATMENT, "Treatment settings"),
-  VALUE(TREATMENT_START, int, 100000, "Number of cells at which to start treatment."), 
-  VALUE(TREATMENT_MUT_PROB, double, 1, "Mutation probability for treatment."), 
 );
 
 struct Cell {
@@ -70,8 +67,6 @@ class InstabilityWorld : public emp::World<Cell> {
   double MUT_PROB;
   double STABILITY_MUT_PROB;
   double INITIAL_FITNESS;
-  int TREATMENT_START;
-  double TREATMENT_MUT_PROB;
 
   int most_recent_birth = 0;
 
@@ -102,8 +97,6 @@ class InstabilityWorld : public emp::World<Cell> {
     MUT_PROB = config.MUT_PROB();   
     STABILITY_MUT_PROB = config.STABILITY_MUT_PROB();   
     INITIAL_FITNESS = config.INITIAL_FITNESS();   
-    TREATMENT_START = config.TREATMENT_START();   
-    TREATMENT_MUT_PROB = config.TREATMENT_MUT_PROB();   
   }
 
   size_t GetWorldX() {
@@ -257,9 +250,6 @@ class InstabilityWorld : public emp::World<Cell> {
 
   void RunStep() {
     std::cout << update << std::endl;
-    if (GetNumOrgs() >= TREATMENT_START) {
-        MUT_PROB = TREATMENT_MUT_PROB;
-    }
 
     for (int cell_id = 0; cell_id < WORLD_X * WORLD_Y; cell_id++) {
       if (!IsOccupied(cell_id)) {
@@ -320,7 +310,7 @@ class InstabilityWorld : public emp::World<Cell> {
           if (GetNumOrgs() == 0 || update - most_recent_birth > 1000) {
             std::cout << "Success!" << std::endl;
             break;
-          } else if (GetNumOrgs() >= (size_t) WORLD_X*WORLD_Y) {
+          } else if (GetNumOrgs() >= (size_t) MAX_CELLS) {
             std::cout << "Failure!" << std::endl;
             break;
           }

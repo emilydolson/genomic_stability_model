@@ -21,5 +21,7 @@ ggplot(data=all_data) + stat_summary(aes(x=update, y=mean_fitness, color=MUT_PRO
 
 ggplot(data=all_data) + geom_line(aes(x=update, y=mean_fitness, color=MUT_PROB, fill=MUT_PROB, group=rep, linetype=FITNESS_MULT)) + facet_wrap(~GAMMA_K) + theme_classic() + scale_x_log10()
 
+ggplot(data=all_data %>% filter(update == 0)) + geom_bar(aes(x=MUT_PROB, fill=status == "Success!\n")) + facet_grid(rows = vars(GAMMA_K), cols= vars(FITNESS_MULT), labeller = labeller(.rows = label_both, .cols = label_both)) + theme_classic() + scale_fill_discrete("Tumor controlled") + xlab("Probability of mutation")
+
 
 ```

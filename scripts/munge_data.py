@@ -57,7 +57,7 @@ def main():
             df[k] = local_data[k]
 
         df["rep"] = rep
-        df["status"] = last_line
+        df["status"] = last_line.strip("\n !")
         rep += 1
 
         frames.append(df)
