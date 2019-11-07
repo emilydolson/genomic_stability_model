@@ -26,5 +26,6 @@ do
     mkdir $i
     cd $i
     ../../../genomic_stability_model -TIME_STEPS 1000000 -INITIAL_FITNESS 1 -GAMMA_K {k} -MUT_PROB {m} -FITNESS_MULT {s} -INIT_POP_SIZE 500 > run.log
+    cd ..
 done
 """)
